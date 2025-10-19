@@ -2,7 +2,7 @@ import os
 import aiohttp
 import asyncio
 from telegram import Update
-from telegram.ext import Updater, MessageHandler, Filters, CallbackContext
+from telegram.ext import Application, MessageHandler, filters, ContextTypes
 
 TELEGRAM_TOKEN = "8203109703:AAFZJUv9vYIv19F1qQAZoBKxCuBswWyvc3c"
 OPENROUTER_API_KEY = "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"
@@ -30,25 +30,21 @@ async def get_ai_response(user_message):
     except Exception as e:
         return "Привет! Я PUV AI - помощник для владельцев питомцев 🐾"
 
-def handle_message(update: Update, context: CallbackContext):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
     
-    async def send_response():
-        response = await get_ai_response(user_message)
-        await update.message.reply_text(f"🐾 PUV AI:\n\n{response}")
+    await update.message.chat.send_action(action="typing")
+    response = await get_ai_response(user_message)
     
-    asyncio.run(send_response())
+    await update.message.reply_text(f"🐾 PUV AI:\n\n{response}")
 
 def main():
-    updater = Updater(TELEGRAM_TOKEN, use_context=True)
-    dispatcher = updater.dispatcher
-    
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+    application = Application.builder().token(TELEGRAM_TOKEN).build()
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     print("✅ PUV AI бот запущен!")
     print("🤖 Бот готов к работе...")
-    updater.start_polling()
-    updater.idle()
+    application.run_polling()
 
 if __name__ == "__main__":
     main()
